@@ -1,4 +1,5 @@
 *.bat
 *.exe
 *.o
+*.docx
 Makefile
