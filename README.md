@@ -1,2 +1,4 @@
-# GL_ES_demo
-my open GL ES demo version
+## GL_ES_demo
+My open GL ES demo version
+### Common library 
+esUtil from https://github.com/danginsburg/opengles3-book
