@@ -14,7 +14,8 @@ typedef struct
    GLuint programObject;
    GLint  positionLoc;
    GLint  mvpLoc;
-   GLint  colorLoc;
+   GLint  pColorLoc;
+   GLint  uColorLoc;
    GLint  texCoordLoc;
    GLint  samplerLoc;
 
@@ -28,6 +29,9 @@ typedef struct
     GLuint  *imgIndices;
     int numImgIndices;
 
+// FRAME
+
+   GLfloat *frameCoords;
 
 //     int numVertices;
 //    int       numIndices;
@@ -87,11 +91,13 @@ int Init ( ESContext *esContext )
    
     GLbyte fShaderStr[] =  
       "precision mediump float;                                       \n"
+      "uniform vec4  p_color;                              \n" // перекрыть
+      "uniform vec4  u_color;                              \n" // заркасить
       "varying vec2 v_texCoord;                                       \n" 
       "uniform sampler2D s_texture;                                   \n"
       "void main()                                                    \n"
       "{                                                              \n"
-      "  gl_FragColor = texture2D( s_texture, v_texCoord ) ; \n" 
+      "  gl_FragColor = texture2D( s_texture, v_texCoord ) * p_color + u_color ;          \n" 
       "}                                                              \n";
 
    userData->programObject = esLoadProgram ( vShaderStr, fShaderStr );
@@ -101,20 +107,21 @@ int Init ( ESContext *esContext )
    // Get the sampler location
    userData->samplerLoc = glGetUniformLocation ( userData->programObject, "s_texture" );
    userData->mvpLoc = glGetUniformLocation( userData->programObject, "u_mvpMatrix" );
-   userData->colorLoc = glGetUniformLocation ( userData->programObject, "u_color" );
+   userData->pColorLoc = glGetUniformLocation ( userData->programObject, "p_color" );
+   userData->uColorLoc = glGetUniformLocation ( userData->programObject, "u_color" );
 
 
     //__________________ IMAGE ___________________
 
     GLfloat imageCoords[20]=
     {
-        -0.1f, -0.4f, 0.0f,
-        0.0f, 1.0f,
-        -0.1f, 1.15f, 0.0f,
-        0.0f, 0.0f,
+        -0.3f, -0.55f, 0.0f,
+        -0.1f, 1.0f,
+        -0.3f, 1.15f, 0.0f,
+        -0.1f, 0.0f,
         1.5f, 1.15f, 0.0f,
         1.0f, 0.0f,
-        1.5f, -0.4, 0.0f,
+        1.5f, -0.55, 0.0f,
         1.0f, 1.0f
     };
 
@@ -141,8 +148,40 @@ int Init ( ESContext *esContext )
 
     //__________________ IMAGE END ___________________
 
+    //__________________ FRAME ___________________
+
+    GLfloat frCoords[40]=
+    {
+        -1.45f, -1.1f, 0.01f,
+        0.0f, 0.0f,
+        -1.45f, 0.0f, 0.01f,
+        1.0f, 0.0f,
+        -0.05f, 0.0f, 0.01f,
+        1.0f, 1.0f,
+        -0.05f, -1.1, 0.01f,
+        0.0f, 1.0f,
+
+        -1.44f, -1.09f, 0.011f,
+        0.0f, 0.0f,
+        -1.44f, -0.01f, 0.011f,
+        1.0f, 0.0f,
+        -0.06f, -0.01f, 0.011f,
+        1.0f, 1.0f,
+        -0.06f, -1.09, 0.011f,
+        0.0f, 1.0f
+    };
+
+    userData->frameCoords = malloc ( sizeof(GLfloat) * 40 );
+    memcpy(  userData->frameCoords, frCoords, sizeof(GLfloat) * 40);
+    for (int i = 0 ; i < 40; i++){
+        printf("\n %f", userData->frameCoords[i]);
+    }
+
+    //__________________ FRAME END ___________________
+
 
     userData->textureImage = createTexture("tex/backTexture.tga");
+    userData->textureGreen = createTexture("tex/flower.tga");
     userData->angle = 0.0f;
     glClearColor ( 0.0f, 0.0f, 0.0f, 0.0f );
     return TRUE;
@@ -162,6 +201,12 @@ void Draw ( ESContext *esContext )
    glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
    glUseProgram ( userData->programObject );
 
+   GLfloat  colors[][4] = { 
+       { 1.0f, 1.0f, 1.0f, 0.0f }, // nothing
+       { 0.0f, 1.0f, 0.0f, 1.0f }, // green
+       { 0.0f, 0.0f, 0.0f, 0.0f }  //black
+   };
+
    //__________________ IMAGE ___________________
 
    glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
@@ -171,6 +216,8 @@ void Draw ( ESContext *esContext )
 
    glEnableVertexAttribArray ( userData->positionLoc );
    glEnableVertexAttribArray ( userData->texCoordLoc );
+   glUniform4fv( userData->uColorLoc, 1, colors[2]);
+   glUniform4fv( userData->pColorLoc, 1, colors[0]);
 
    glUniformMatrix4fv( userData->mvpLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpMatrix.m[0][0] );
  
@@ -183,6 +230,36 @@ void Draw ( ESContext *esContext )
     glDrawElements( GL_TRIANGLES, userData->numImgIndices, GL_UNSIGNED_INT, userData->imgIndices );
 
     //__________________ IMAGE END ___________________
+
+    //__________________ FRAME ___________________
+
+     GLuint frameInd[][6] =
+    {
+       {0, 1, 2,
+       2, 3, 0},
+      {4, 5, 6,
+       6, 7, 4}
+    };
+
+   glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
+                           GL_FALSE, 5 * sizeof(GLfloat), userData->frameCoords );
+   glVertexAttribPointer ( userData->texCoordLoc, 2, GL_FLOAT,
+                            GL_FALSE, 5 * sizeof(GLfloat),  &userData->frameCoords[3]);                        
+
+   glEnableVertexAttribArray ( userData->positionLoc );
+   glEnableVertexAttribArray ( userData->texCoordLoc );
+
+   glUniform4fv( userData->pColorLoc, 1, colors[1]);
+   glUniform4fv( userData->uColorLoc, 1, colors[1]);
+   glDrawElements ( GL_TRIANGLES, 6, GL_UNSIGNED_INT, frameInd[0] );
+
+   
+   glUniform4fv( userData->pColorLoc, 1, colors[2]);
+   glUniform4fv( userData->uColorLoc, 1, colors[2]);
+   glDrawElements ( GL_TRIANGLES, 6, GL_UNSIGNED_INT, frameInd[1] );
+
+    //__________________ FRAME END ___________________
+
 
    eglSwapBuffers ( esContext->eglDisplay, esContext->eglSurface );
 }
@@ -237,7 +314,7 @@ void* glTask(void* ptr)
    esInitContext ( &esContext );
    esContext.userData = &userData;
 
-   esCreateWindow ( &esContext, "GL ES demo", 640, 460, ES_WINDOW_RGB | ES_WINDOW_DEPTH  );
+   esCreateWindow ( &esContext, "GL ES demo", 620, 440, ES_WINDOW_RGB | ES_WINDOW_DEPTH  );
    
    if ( !Init ( &esContext ) )
       return 0;
