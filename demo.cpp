@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <sstream>
 #include <iomanip>
+#include <ctime>
 
 #include "windows.h"
 
@@ -47,15 +48,20 @@ typedef struct
 
 // CAMERA #
 
-   int numCameraIndices; // text
+   int numCameraIndices; 
    int numCameraVertices;
    GLfloat  *cameraVertices;
    GLfloat  *cameraTexCoords;
    GLuint   *cameraIndices;
 
-//     int numVertices;
-//    int       numIndices;
-//    int       numIndicesColor;
+// DATE
+
+   int numDateIndices; 
+   int numDateVertices;
+   GLfloat  *dateVertices;
+   GLfloat  *dateTexCoords;
+   GLuint   *dateIndices;
+
 
    GLfloat   angle;
    ESMatrix  mvpMatrix;
@@ -68,6 +74,7 @@ typedef struct
 
 char* shared_I;
 const char* camText = "CAMERA1";
+char* timeText;
 
 
 int getTexCoords ( GLfloat **texCoords, const GLuint numVertices, char *text)
@@ -79,7 +86,7 @@ int getTexCoords ( GLfloat **texCoords, const GLuint numVertices, char *text)
    // отображение в коде позиций символов на изображении-текстуре
     char fontSheet[shHeigth][shWidth] =
    {
-       {'A', 'B', 'C', 'D', 'E', 'F', ' '},
+       {'A', 'B', 'C', 'D', 'E', 'F', '_'}, 
        {'G', 'H', 'I', 'J', 'K', 'L', '.'},
        {'M', 'N', 'O', 'P', 'Q', 'R', '!'},
        {'S', 'T', 'U', 'V', 'W', 'X', '?'},
@@ -443,10 +450,10 @@ int Init ( ESContext *esContext )
 
      userData->numCameraIndices = 6;
 
-    GLfloat yCamera_min = 0.95f,
+    GLfloat yCamera_min = 0.98f,
             yCamera_max = 1.05f,
             xCamera_min = -1.5f,
-            xCamera_max = -0.8f;
+            xCamera_max = -1.0f;
             
     GLuint numCameraBlocks = 1;
     GLfloat firstCameraBlock = xCamera_min;
@@ -514,6 +521,91 @@ int Init ( ESContext *esContext )
     //     printf("\n cami %d", userData->cameraIndices[i]);
     // }
     //__________________ CAMERA END ___________________
+ 
+	time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[30];
+    tstruct = *localtime(&now);
+    strftime(buf, sizeof(buf), "%Y%m%d%H%M", &tstruct);
+    cout << endl << "time" << buf << endl;
+    timeText = (char*)malloc(30);
+	memcpy(timeText, buf, 30);
+
+    //__________________ DATE _______________________
+
+     userData->numDateIndices = 6;
+
+    GLfloat yDate_min = 0.98f,
+            yDate_max = 1.05f,
+            xDate_min = 0.4f,
+            xDate_max = 1.2f;
+            
+    GLuint numDateBlocks = 1;
+    GLfloat firstDateBlock = xDate_min;
+    
+    numDateBlocks = symCount(timeText);
+    // printf("\n numbl CAMERA %d", numCameraBlocks);
+    
+    GLfloat xDatelen = xDate_max - xDate_min;
+    GLfloat yDatelen = yDate_max - yDate_min;
+    GLfloat blockDateLen = xDatelen / numDateBlocks;
+
+    userData->numDateIndices *= numDateBlocks;
+    userData->numDateVertices = 4 * numDateBlocks;
+
+    GLfloat wDate = blockDateLen * numDateBlocks; // для  координат - зависит ширина блока
+     
+    GLfloat blocksDate[userData->numDateVertices*3];
+    GLfloat shiftDateY = (yDatelen - blockDateLen) / 2.0;
+
+    for ( int i = 0; i < numDateBlocks; i++ )
+    {
+        blocksDate[0 + 12*i] = (firstDateBlock + (float)(wDate/numDateBlocks * i));       // 0  x
+        blocksDate[1 + 12*i] = yDate_min + shiftDateY;                               //    y
+        blocksDate[2 + 12*i] = 0.004f; 
+        
+        blocksDate[3 + 12*i] = (firstDateBlock + (float)(wDate/numDateBlocks * i));       // 1
+        blocksDate[4 + 12*i] = yDate_max - shiftDateY;
+        blocksDate[5 + 12*i] = 0.004f;
+
+        blocksDate[6 + 12*i] = (float)(firstDateBlock + (wDate/numDateBlocks * (i + 1))); // 2
+        blocksDate[7 + 12*i] = yDate_max - shiftDateY;
+        blocksDate[8 + 12*i] = 0.004f;
+
+        blocksDate[9 + 12*i] = (float)(firstDateBlock + (wDate/numDateBlocks * (i + 1))); // 3
+        blocksDate[10 + 12*i] = yDate_min + shiftDateY;
+        blocksDate[11 + 12*i] = 0.004f;
+    }
+    
+
+    userData->dateVertices = malloc ( sizeof(GLfloat) * 3 * userData->numDateVertices );
+    memcpy( userData->dateVertices, blocksDate, sizeof(GLfloat) * 3 * userData->numDateVertices  );
+
+    GLuint dateIndices[userData->numDateIndices];
+
+    // printf("\n indeces: %d", userData->numCameraIndices);
+
+    for ( int i = 0; i < numDateBlocks; i++ )
+    {
+        int buf = 4 * i;
+        dateIndices[0 + 6*i] = buf; // 1 triangle
+        dateIndices[1 + 6*i] = buf + 1;
+        dateIndices[2 + 6*i] = buf + 2;
+
+        dateIndices[3 + 6*i] = buf; // 2 triangle
+        dateIndices[4 + 6*i] = buf + 2;
+        dateIndices[5 + 6*i] = buf + 3;
+
+    }
+    //getTexCoords( &userData->texCoords, numVertices/*, text*/);
+    
+    userData->dateIndices = malloc ( sizeof(GLuint) * userData->numDateIndices );
+    memcpy( userData->dateIndices, dateIndices, sizeof(GLuint) * userData->numDateIndices );
+  
+    // for  (int i =0; i < userData->numCameraIndices; i++){
+    //     printf("\n cami %d", userData->cameraIndices[i]);
+    // }
+    //__________________ DATE END ___________________
 
 
     userData->textureImage = createTexture("tex/backTexture.tga");
@@ -656,6 +748,21 @@ void Draw ( ESContext *esContext )
 
     //__________________ CAMERA END ___________________
 
+    //__________________ DATE _______________________
+ 
+   glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
+                           GL_FALSE, 3 * sizeof(GLfloat), userData->dateVertices );
+   glVertexAttribPointer ( userData->texCoordLoc, 2, GL_FLOAT,
+                            GL_FALSE, 2 * sizeof(GLfloat),  userData->dateTexCoords);                        
+
+   glEnableVertexAttribArray ( userData->positionLoc );
+   glEnableVertexAttribArray ( userData->texCoordLoc );
+
+   glUniformMatrix4fv( userData->mvpLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpMatrix.m[0][0] );
+
+    glDrawElements( GL_TRIANGLES, userData->numDateIndices, GL_UNSIGNED_INT, userData->dateIndices );
+
+    //__________________ DATE END ___________________
 
    eglSwapBuffers ( esContext->eglDisplay, esContext->eglSurface );
 }
@@ -669,6 +776,7 @@ void Update ( ESContext *esContext, float deltaTime )
    float    aspect;
    getTexCoords( &userData->textTexCoords, userData->numTextVertices, shared_I);
    getTexCoords( &userData->cameraTexCoords, userData->numCameraVertices, camText);
+   getTexCoords( &userData->dateTexCoords, userData->numDateVertices, timeText);
 
 //    for (int i = 0 ; i < userData->numTextVertices * 2; i++){
 //        printf("\n tex %d, %f", i, userData->textTexCoords[i]);
