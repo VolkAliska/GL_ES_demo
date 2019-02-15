@@ -45,6 +45,14 @@ typedef struct
    GLfloat  *contTexCoords;
    GLuint   *contIndices;
 
+// CAMERA #
+
+   int numCameraIndices; // text
+   int numCameraVertices;
+   GLfloat  *cameraVertices;
+   GLfloat  *cameraTexCoords;
+   GLuint   *cameraIndices;
+
 //     int numVertices;
 //    int       numIndices;
 //    int       numIndicesColor;
@@ -59,9 +67,10 @@ typedef struct
 } UserData;
 
 char* shared_I;
+const char* camText = "CAMERA1";
 
 
-int getTexCoords ( GLfloat **texCoords, const GLuint numVertices/*, char *text*/)
+int getTexCoords ( GLfloat **texCoords, const GLuint numVertices, char *text)
 {
     
     const int shWidth = 7,
@@ -70,7 +79,7 @@ int getTexCoords ( GLfloat **texCoords, const GLuint numVertices/*, char *text*/
    // отображение в коде позиций символов на изображении-текстуре
     char fontSheet[shHeigth][shWidth] =
    {
-       {'A', 'B', 'C', 'D', 'E', 'F', '_'},
+       {'A', 'B', 'C', 'D', 'E', 'F', ' '},
        {'G', 'H', 'I', 'J', 'K', 'L', '.'},
        {'M', 'N', 'O', 'P', 'Q', 'R', '!'},
        {'S', 'T', 'U', 'V', 'W', 'X', '?'},
@@ -105,7 +114,7 @@ int getTexCoords ( GLfloat **texCoords, const GLuint numVertices/*, char *text*/
    {
         // координаты вершин квадрата с нужным символом
         GLfloat s_max, s_min, t_max, t_min;
-        char* text = shared_I;
+        //char* text = shared_I;
         // смещение по осям s, t считается по индексу позиции символа на текстуре
         GLuint s_delta, t_delta;
         if(text[i] == '\0')
@@ -297,9 +306,9 @@ int Init ( ESContext *esContext )
 
     userData->frameCoords = malloc ( sizeof(GLfloat) * 40 );
     memcpy(  userData->frameCoords, frCoords, sizeof(GLfloat) * 40);
-    for (int i = 0 ; i < 40; i++){
-        printf("\n %f", userData->frameCoords[i]);
-    }
+    // for (int i = 0 ; i < 40; i++){
+    //     printf("\n %f", userData->frameCoords[i]);
+    // }
 
     //__________________ FRAME END ___________________
 
@@ -422,16 +431,94 @@ int Init ( ESContext *esContext )
     
     userData->textIndices = malloc ( sizeof(GLuint) * userData->numTextIndices );
     memcpy( userData->textIndices, sqIndices, sizeof(GLuint) * userData->numTextIndices );
-    for  (int i =0; i < 48; i++){
-        printf("\n textv %f", userData->textVertices[i]);
+    // for  (int i =0; i < 48; i++){
+    //     printf("\n textv %f", userData->textVertices[i]);
+    // }
+    // for  (int i =0; i < 24; i++){
+    //     printf("\n texti %d", userData->textIndices[i]);
+    // }
+    //__________________ TEXT END ___________________
+
+    //__________________ CAMERA _______________________
+
+     userData->numCameraIndices = 6;
+
+    GLfloat yCamera_min = 0.95f,
+            yCamera_max = 1.05f,
+            xCamera_min = -1.5f,
+            xCamera_max = -0.8f;
+            
+    GLuint numCameraBlocks = 1;
+    GLfloat firstCameraBlock = xCamera_min;
+    
+    numCameraBlocks = symCount(camText);
+    // printf("\n numbl CAMERA %d", numCameraBlocks);
+    
+    GLfloat xCameralen = xCamera_max - xCamera_min;
+    GLfloat yCameralen = yCamera_max - yCamera_min;
+    GLfloat blockCameraLen = xCameralen / numCameraBlocks;
+
+    userData->numCameraIndices *= numCameraBlocks;
+    userData->numCameraVertices = 4 * numCameraBlocks;
+
+    GLfloat wCamera = blockCameraLen * numCameraBlocks; // для  координат - зависит ширина блока
+     
+    GLfloat blocksCamera[userData->numCameraVertices*3];
+    GLfloat shiftCameraY = (yCameralen - blockCameraLen) / 2.0;
+
+    for ( int i = 0; i < numCameraBlocks; i++ )
+    {
+        blocksCamera[0 + 12*i] = (firstCameraBlock + (float)(wCamera/numCameraBlocks * i));       // 0  x
+        blocksCamera[1 + 12*i] = yCamera_min + shiftCameraY;                               //    y
+        blocksCamera[2 + 12*i] = 0.004f; 
+        
+        blocksCamera[3 + 12*i] = (firstCameraBlock + (float)(wCamera/numCameraBlocks * i));       // 1
+        blocksCamera[4 + 12*i] = yCamera_max - shiftCameraY;
+        blocksCamera[5 + 12*i] = 0.004f;
+
+        blocksCamera[6 + 12*i] = (float)(firstCameraBlock + (wCamera/numCameraBlocks * (i + 1))); // 2
+        blocksCamera[7 + 12*i] = yCamera_max - shiftCameraY;
+        blocksCamera[8 + 12*i] = 0.004f;
+
+        blocksCamera[9 + 12*i] = (float)(firstCameraBlock + (wCamera/numCameraBlocks * (i + 1))); // 3
+        blocksCamera[10 + 12*i] = yCamera_min + shiftCameraY;
+        blocksCamera[11 + 12*i] = 0.004f;
     }
-    for  (int i =0; i < 24; i++){
-        printf("\n texti %d", userData->textIndices[i]);
+    
+
+    userData->cameraVertices = malloc ( sizeof(GLfloat) * 3 * userData->numCameraVertices );
+    memcpy( userData->cameraVertices, blocksCamera, sizeof(GLfloat) * 3 * userData->numCameraVertices  );
+
+    GLuint camIndices[userData->numCameraIndices];
+
+    // printf("\n indeces: %d", userData->numCameraIndices);
+
+    for ( int i = 0; i < numCameraBlocks; i++ )
+    {
+        int buf = 4 * i;
+        camIndices[0 + 6*i] = buf; // 1 triangle
+        camIndices[1 + 6*i] = buf + 1;
+        camIndices[2 + 6*i] = buf + 2;
+
+        camIndices[3 + 6*i] = buf; // 2 triangle
+        camIndices[4 + 6*i] = buf + 2;
+        camIndices[5 + 6*i] = buf + 3;
+
     }
-   //  //__________________ TEXT END ___________________
+    //getTexCoords( &userData->texCoords, numVertices/*, text*/);
+    
+    userData->cameraIndices = malloc ( sizeof(GLuint) * userData->numCameraIndices );
+    memcpy( userData->cameraIndices, camIndices, sizeof(GLuint) * userData->numCameraIndices );
+  
+    // for  (int i =0; i < userData->numCameraIndices; i++){
+    //     printf("\n cami %d", userData->cameraIndices[i]);
+    // }
+    //__________________ CAMERA END ___________________
+
 
     userData->textureImage = createTexture("tex/backTexture.tga");
     userData->textureBlack = createTexture("tex/black.tga");
+    userData->textureGreen = createTexture("tex/green.tga");
     userData->angle = 0.0f;
     glClearColor ( 0.0f, 0.0f, 0.0f, 0.0f );
     return TRUE;
@@ -532,10 +619,7 @@ void Draw ( ESContext *esContext )
 
    glUniformMatrix4fv( userData->mvpLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpMatrix.m[0][0] );
 
-//    //--------------------
-
-    glDrawElements( GL_TRIANGLES, 12, GL_UNSIGNED_INT, userData->contIndices );
-//    //
+    glDrawElements( GL_TRIANGLES, 12, GL_UNSIGNED_INT, userData->contIndices ); // container
 
    glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
                            GL_FALSE, 3 * sizeof(GLfloat), userData->textVertices );
@@ -545,9 +629,32 @@ void Draw ( ESContext *esContext )
    glEnableVertexAttribArray ( userData->positionLoc );
    glEnableVertexAttribArray ( userData->texCoordLoc );
    
-   glDrawElements( GL_TRIANGLES, userData->numTextIndices, GL_UNSIGNED_INT, userData->textIndices );
+   glDrawElements( GL_TRIANGLES, userData->numTextIndices, GL_UNSIGNED_INT, userData->textIndices );  // text
 
     //__________________ TEXT END ___________________
+
+    //__________________ CAMERA _______________________
+
+    glActiveTexture ( GL_TEXTURE2 ); // текстурный блок 
+   glBindTexture ( GL_TEXTURE_2D, userData->textureGreen );
+   glUniform1i ( userData->samplerLoc, 2 );
+   
+   glUniform4fv( userData->pColorLoc, 1, colors[0]);
+   glUniform4fv( userData->uColorLoc, 1, colors[2]);
+
+   glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
+                           GL_FALSE, 3 * sizeof(GLfloat), userData->cameraVertices );
+   glVertexAttribPointer ( userData->texCoordLoc, 2, GL_FLOAT,
+                            GL_FALSE, 2 * sizeof(GLfloat),  userData->cameraTexCoords);                        
+
+   glEnableVertexAttribArray ( userData->positionLoc );
+   glEnableVertexAttribArray ( userData->texCoordLoc );
+
+   glUniformMatrix4fv( userData->mvpLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpMatrix.m[0][0] );
+
+    glDrawElements( GL_TRIANGLES, userData->numCameraIndices, GL_UNSIGNED_INT, userData->cameraIndices );
+
+    //__________________ CAMERA END ___________________
 
 
    eglSwapBuffers ( esContext->eglDisplay, esContext->eglSurface );
@@ -560,11 +667,14 @@ void Update ( ESContext *esContext, float deltaTime )
    ESMatrix perspective;
    ESMatrix modelview;
    float    aspect;
-   getTexCoords( &userData->textTexCoords, userData->numTextVertices/*, text*/);
+   getTexCoords( &userData->textTexCoords, userData->numTextVertices, shared_I);
+   getTexCoords( &userData->cameraTexCoords, userData->numCameraVertices, camText);
+
 //    for (int i = 0 ; i < userData->numTextVertices * 2; i++){
 //        printf("\n tex %d, %f", i, userData->textTexCoords[i]);
 //    }
 //    printf("____________________");
+
    userData->angle += ( deltaTime * 40.0f );
    if( userData->angle >= 360.0f )
       userData->angle -= 360.0f;
@@ -578,7 +688,7 @@ void Update ( ESContext *esContext, float deltaTime )
    // Translate away from the viewer
    esTranslate( &modelview, 0.0, 0.0, -2.0 );
 
-   esRotate( &modelview, userData->angle, 1.0, 1.0, 1.0 );
+   //esRotate( &modelview, userData->angle, 1.0, 1.0, 1.0 );
    
    esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
 }
