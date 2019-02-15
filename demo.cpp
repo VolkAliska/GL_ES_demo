@@ -431,7 +431,7 @@ int Init ( ESContext *esContext )
    //  //__________________ TEXT END ___________________
 
     userData->textureImage = createTexture("tex/backTexture.tga");
-    userData->textureBlack = createTexture("tex/with_back.tga");
+    userData->textureBlack = createTexture("tex/black.tga");
     userData->angle = 0.0f;
     glClearColor ( 0.0f, 0.0f, 0.0f, 0.0f );
     return TRUE;
@@ -510,6 +510,7 @@ void Draw ( ESContext *esContext )
 
     //__________________ FRAME END ___________________
 
+
     // __________________ TEXT _______________________
     
    
@@ -548,6 +549,7 @@ void Draw ( ESContext *esContext )
 
     //__________________ TEXT END ___________________
 
+
    eglSwapBuffers ( esContext->eglDisplay, esContext->eglSurface );
 }
 
@@ -563,9 +565,9 @@ void Update ( ESContext *esContext, float deltaTime )
 //        printf("\n tex %d, %f", i, userData->textTexCoords[i]);
 //    }
 //    printf("____________________");
-   // userData->angle += ( deltaTime * 40.0f );
-   // if( userData->angle >= 360.0f )
-   //    userData->angle -= 360.0f;
+   userData->angle += ( deltaTime * 40.0f );
+   if( userData->angle >= 360.0f )
+      userData->angle -= 360.0f;
 
    aspect = (GLfloat) esContext->width / (GLfloat) esContext->height;
    esMatrixLoadIdentity( &perspective );
@@ -576,7 +578,7 @@ void Update ( ESContext *esContext, float deltaTime )
    // Translate away from the viewer
    esTranslate( &modelview, 0.0, 0.0, -2.0 );
 
-   //esRotate( &modelview, userData->angle, 1.0, 1.0, 1.0 );
+   esRotate( &modelview, userData->angle, 1.0, 1.0, 1.0 );
    
    esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
 }
