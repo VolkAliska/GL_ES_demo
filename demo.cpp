@@ -62,9 +62,13 @@ typedef struct
    GLfloat  *dateTexCoords;
    GLuint   *dateIndices;
 
-
+// context
    GLfloat   angle;
    ESMatrix  mvpMatrix;
+
+// text
+    ESMatrix mvpTextMatrix;
+    GLint mvpTextLoc;
 
    GLuint textureImage;
    GLuint textureGreen;
@@ -130,8 +134,8 @@ int getTexCoords ( GLfloat **texCoords, const GLuint numVertices, char *text)
         symbol = text[i];
         GLuint isSymbolAble = 0;
 
-        for ( int k = 0; k < 6; k++ )
-            for ( int j = 0; j < 6; j++ )
+        for ( int k = 0; k < shHeigth; k++ )
+            for ( int j = 0; j < shWidth; j++ )
                 if ( symbol == fontSheet[k][j])
                 {
                     s_delta = j;
@@ -176,7 +180,7 @@ int getTexCoords ( GLfloat **texCoords, const GLuint numVertices, char *text)
 int symCount ( char *text )
 {
     GLuint symCount = 0;
-    for ( int i = 0; i < 10; i++)
+    for ( int i = 0; i < 30; i++)
     {
         if(text[i] != '\0')
             symCount++;
@@ -526,8 +530,8 @@ int Init ( ESContext *esContext )
     struct tm  tstruct;
     char       buf[30];
     tstruct = *localtime(&now);
-    strftime(buf, sizeof(buf), "%Y%m%d%H%M", &tstruct);
-    cout << endl << "time" << buf << endl;
+    strftime(buf, sizeof(buf), "%Y.%m.%d_%H.%M", &tstruct);
+    // cout << endl << "time" << buf << endl;
     timeText = (char*)malloc(30);
 	memcpy(timeText, buf, 30);
 
@@ -537,7 +541,7 @@ int Init ( ESContext *esContext )
 
     GLfloat yDate_min = 0.98f,
             yDate_max = 1.05f,
-            xDate_min = 0.4f,
+            xDate_min = 0.0f,
             xDate_max = 1.2f;
             
     GLuint numDateBlocks = 1;
@@ -709,7 +713,7 @@ void Draw ( ESContext *esContext )
    glEnableVertexAttribArray ( userData->positionLoc );
    glEnableVertexAttribArray ( userData->texCoordLoc );
 
-   glUniformMatrix4fv( userData->mvpLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpMatrix.m[0][0] );
+   glUniformMatrix4fv( userData->mvpTextLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpTextMatrix.m[0][0] );
 
     glDrawElements( GL_TRIANGLES, 12, GL_UNSIGNED_INT, userData->contIndices ); // container
 
@@ -773,6 +777,7 @@ void Update ( ESContext *esContext, float deltaTime )
    UserData *userData = (UserData*) esContext->userData;
    ESMatrix perspective;
    ESMatrix modelview;
+   ESMatrix modelviewText;
    float    aspect;
    getTexCoords( &userData->textTexCoords, userData->numTextVertices, shared_I);
    getTexCoords( &userData->cameraTexCoords, userData->numCameraVertices, camText);
@@ -792,13 +797,15 @@ void Update ( ESContext *esContext, float deltaTime )
    esPerspective( &perspective, 60.0f, aspect, 1.0f, 30.0f );
 
    esMatrixLoadIdentity( &modelview );
+   esMatrixLoadIdentity( &modelviewText );
 
    // Translate away from the viewer
    esTranslate( &modelview, 0.0, 0.0, -2.0 );
-
-   //esRotate( &modelview, userData->angle, 1.0, 1.0, 1.0 );
+   esTranslate( &modelviewText, 0.0, 0.0, -2.0 );
+   esRotate( &modelviewText, userData->angle, 1.0, 1.0, 1.0 );
    
    esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
+   esMatrixMultiply( &userData->mvpTextMatrix, &modelviewText, &perspective );
 }
 
 void ShutDown ( ESContext *esContext )
@@ -839,7 +846,7 @@ void* glTask(void* ptr)
 
 int updateNumber(int i, int sec)
 {
- 	Sleep(100);
+ 	Sleep(300);
 
 	cout << "task1 says: " << " " << setfill('0') << setw(4) << i << endl;
 	std::stringstream buffer;
