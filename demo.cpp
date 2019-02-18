@@ -259,13 +259,13 @@ int Init ( ESContext *esContext )
 
     GLfloat imageCoords[20]=
     {
-        -0.3f, -0.55f, 0.0f,
+        -0.3f, -0.55f, -0.4f,
         -0.1f, 1.0f,
-        -0.3f, 1.15f, 0.0f,
+        -0.3f, 1.15f, -0.4f,
         -0.1f, 0.0f,
-        1.5f, 1.15f, 0.0f,
+        1.5f, 1.15f, -0.4f,
         1.0f, 0.0f,
-        1.5f, -0.55, 0.0f,
+        1.5f, -0.55, -0.4f,
         1.0f, 1.0f
     };
 
@@ -296,22 +296,22 @@ int Init ( ESContext *esContext )
 
     GLfloat frCoords[40]=
     {
-        -1.45f, -1.1f, 0.001f,
+        -1.45f, -1.1f, -0.36f,
         0.0f, 0.0f,
-        -1.45f, 0.0f, 0.001f,
+        -1.45f, 0.0f, -0.36f,
         1.0f, 0.0f,
-        -0.05f, 0.0f, 0.001f,
+        -0.05f, 0.0f, -0.36f,
         1.0f, 1.0f,
-        -0.05f, -1.1, 0.001f,
+        -0.05f, -1.1, -0.36f,
         0.0f, 1.0f,
 
-        -1.44f, -1.09f, 0.002f,
+        -1.4f, -1.06f, -0.30f,
         0.0f, 0.0f,
-        -1.44f, -0.01f, 0.002f,
+        -1.4f, -0.01f, -0.30f,
         1.0f, 0.0f,
-        -0.06f, -0.01f, 0.002f,
+        -0.06f, -0.01f, -0.30f,
         1.0f, 1.0f,
-        -0.06f, -1.09, 0.002f,
+        -0.06f, -1.06f, -0.30f,
         0.0f, 1.0f
     };
 
@@ -326,10 +326,10 @@ int Init ( ESContext *esContext )
    //  //__________________ TEXT _______________________
       
    userData->numTextIndices = 6;
-   GLfloat y_min = -0.80f,
-            y_max = -0.30f,
-            x_min = -1.35f,
-            x_max = -0.15f;
+   GLfloat y_min = -0.65f,
+            y_max = -0.33f,
+            x_min = -1.00f,
+            x_max = -0.3f;
             
     GLuint numBlocks = 1;
     GLfloat firstBlock = x_min;
@@ -356,15 +356,15 @@ int Init ( ESContext *esContext )
     
     GLfloat contVert[24]=
     {
-        x_min, y_min, 0.004f,
-        x_min, y_min + shiftY, 0.004f,
-        x_max, y_min + shiftY, 0.004f,
-        x_max, y_min, 0.004f,
+        x_min, y_min, 0.01f,
+        x_min, y_min + shiftY, 0.01f,
+        x_max, y_min + shiftY, 0.01f,
+        x_max, y_min, 0.01f,
 
-        x_min, y_max - shiftY, 0.004f,
-        x_min, y_max, 0.004f,
-        x_max, y_max, 0.004f,
-        x_max, y_max - shiftY, 0.004f
+        x_min, y_max - shiftY, 0.01f,
+        x_min, y_max, 0.01f,
+        x_max, y_max, 0.01f,
+        x_max, y_max - shiftY, 0.01f
     };
 
     userData->contVertices = malloc ( sizeof(GLfloat) * 24 );
@@ -405,19 +405,19 @@ int Init ( ESContext *esContext )
     {
         blocksVerts[0 + 12*i] = (firstBlock + (float)(w/numBlocks * i));       // 0  x
         blocksVerts[1 + 12*i] = y_min + shiftY;                               //    y
-        blocksVerts[2 + 12*i] = 0.004f; 
+        blocksVerts[2 + 12*i] = 0.01f; 
         
         blocksVerts[3 + 12*i] = (firstBlock + (float)(w/numBlocks * i));       // 1
         blocksVerts[4 + 12*i] = y_max - shiftY;
-        blocksVerts[5 + 12*i] = 0.004f;
+        blocksVerts[5 + 12*i] = 0.01f;
 
         blocksVerts[6 + 12*i] = (float)(firstBlock + (w/numBlocks * (i + 1))); // 2
         blocksVerts[7 + 12*i] = y_max - shiftY;
-        blocksVerts[8 + 12*i] = 0.004f;
+        blocksVerts[8 + 12*i] = 0.01f;
 
         blocksVerts[9 + 12*i] = (float)(firstBlock + (w/numBlocks * (i + 1))); // 3
         blocksVerts[10 + 12*i] = y_min + shiftY;
-        blocksVerts[11 + 12*i] = 0.004f;
+        blocksVerts[11 + 12*i] = 0.01f;
     }
     
     userData->textVertices = malloc ( sizeof(GLfloat) * 3 * userData->numTextVertices );
@@ -801,8 +801,9 @@ void Update ( ESContext *esContext, float deltaTime )
 
    // Translate away from the viewer
    esTranslate( &modelview, 0.0, 0.0, -2.0 );
-   esTranslate( &modelviewText, 0.0, 0.0, -2.0 );
-   esRotate( &modelviewText, userData->angle, 1.0, 1.0, 1.0 );
+   esTranslate( &modelviewText, 0.0 , 0.0, -2.0 );  
+
+   esRotate( &modelviewText, userData->angle, -0.6, -0.4, 0.0 );
    
    esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
    esMatrixMultiply( &userData->mvpTextMatrix, &modelviewText, &perspective );
