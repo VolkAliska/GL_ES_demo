@@ -46,6 +46,14 @@ typedef struct
    GLfloat  *contTexCoords;
    GLuint   *contIndices;
 
+// text box
+
+   int numTBIndices; // text
+   int numTBVertices;
+   GLfloat  *tbVertices;
+   GLfloat  *tbTexCoords;
+   GLuint   *tbIndices;
+
 // CAMERA #
 
    int numCameraIndices; 
@@ -259,13 +267,13 @@ int Init ( ESContext *esContext )
 
     GLfloat imageCoords[20]=
     {
-        -0.3f, -0.55f, -0.4f,
+        -0.2f, -0.65f, -0.6f,
         -0.1f, 1.0f,
-        -0.3f, 1.15f, -0.4f,
+        -0.2f, 1.25f, -0.6f,
         -0.1f, 0.0f,
-        1.5f, 1.15f, -0.4f,
+        1.8f, 1.25f, -0.6f,
         1.0f, 0.0f,
-        1.5f, -0.55, -0.4f,
+        1.8f, -0.65, -0.6f,
         1.0f, 1.0f
     };
 
@@ -296,22 +304,22 @@ int Init ( ESContext *esContext )
 
     GLfloat frCoords[40]=
     {
-        -1.45f, -1.1f, -0.36f,
+        -1.80f, -1.34f, -0.56f,
         0.0f, 0.0f,
-        -1.45f, 0.0f, -0.36f,
+        -1.80f, -0.1f, -0.56f,
         1.0f, 0.0f,
-        -0.05f, 0.0f, -0.36f,
+        -0.1f, -0.1f, -0.56f,
         1.0f, 1.0f,
-        -0.05f, -1.1, -0.36f,
+        -0.1f, -1.34, -0.56f,
         0.0f, 1.0f,
 
-        -1.4f, -1.06f, -0.30f,
+        -1.75f, -1.3f, -0.50f,
         0.0f, 0.0f,
-        -1.4f, -0.01f, -0.30f,
+        -1.75f, -0.11f, -0.50f,
         1.0f, 0.0f,
-        -0.06f, -0.01f, -0.30f,
+        -0.11f, -0.11f, -0.50f,
         1.0f, 1.0f,
-        -0.06f, -1.06f, -0.30f,
+        -0.11f, -1.3f, -0.50f,
         0.0f, 1.0f
     };
 
@@ -326,8 +334,8 @@ int Init ( ESContext *esContext )
    //  //__________________ TEXT _______________________
       
    userData->numTextIndices = 6;
-   GLfloat y_min = -0.65f,
-            y_max = -0.33f,
+   GLfloat y_min = -0.85f,
+            y_max = -0.43f,
             x_min = -1.00f,
             x_max = -0.3f;
             
@@ -366,6 +374,50 @@ int Init ( ESContext *esContext )
         x_max, y_max, 0.01f,
         x_max, y_max - shiftY, 0.01f
     };
+
+    // объем для вертелки
+
+    GLfloat contTBVert[24]=
+    {
+        x_min, y_min, -0.03f, //far
+        x_max, y_min, -0.03f,
+        x_min, y_max, -0.03f,
+        x_max, y_max, -0.03f,
+        x_min, y_min, 0.01f, // near
+        x_max, y_min, 0.01f,
+        x_min, y_max, 0.01f,
+        x_max, y_max, 0.01f
+    };
+
+    userData->tbVertices = malloc ( sizeof(GLfloat) * 24 );
+    memcpy(  userData->tbVertices, contTBVert, sizeof(GLfloat) * 24);
+
+    GLfloat tbTex[16];
+    for (int i = 0; i < 16; i++){
+        tbTex[i] = 0.0f;
+    }
+
+    userData->tbTexCoords = malloc ( sizeof(GLfloat) * 16 );
+    memcpy(  userData->tbTexCoords, tbTex, sizeof(GLfloat) * 16);
+
+    GLuint tbInd[30]=
+    {
+        0, 2, 3, // far plate
+        3, 1, 0,
+        4, 6, 2, // left
+        2, 0, 4,
+        6, 2, 3, // top
+        3, 7, 6,
+        7, 3, 1, // right
+        1, 5, 7,
+        1, 5, 4, // bottom
+        4, 0, 1
+    };
+
+    userData->tbIndices = malloc ( sizeof(GLuint) * 30 );
+    memcpy(  userData->tbIndices, tbInd, sizeof(GLuint) * 30);
+
+    // кончился объем для вертелки
 
     userData->contVertices = malloc ( sizeof(GLfloat) * 24 );
     memcpy(  userData->contVertices, contVert, sizeof(GLfloat) * 24);
@@ -638,6 +690,7 @@ void Draw ( ESContext *esContext )
        { 1.0f, 1.0f, 1.0f, 0.0f }, // nothing
        { 0.0f, 1.0f, 0.0f, 1.0f }, // green
        { 0.0f, 0.0f, 0.0f, 0.0f }, // black 0 - полностью прозрачный
+        { 0.3f, 0.3f, 0.3f, 1.0f }, // gray
    };
 
    //__________________ IMAGE ___________________
@@ -729,6 +782,23 @@ void Draw ( ESContext *esContext )
 
     //__________________ TEXT END ___________________
 
+    // вертелка 
+   
+   glUniform4fv( userData->pColorLoc, 1, colors[3]);
+   glUniform4fv( userData->uColorLoc, 1, colors[3]);
+
+   glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
+                           GL_FALSE, 3 * sizeof(GLfloat), userData->tbVertices );
+   glVertexAttribPointer ( userData->texCoordLoc, 2, GL_FLOAT,
+                            GL_FALSE, 2 * sizeof(GLfloat),  userData->tbTexCoords);                        
+
+   glEnableVertexAttribArray ( userData->positionLoc );
+   glEnableVertexAttribArray ( userData->texCoordLoc );
+
+   glUniformMatrix4fv( userData->mvpTextLoc, 1, GL_FALSE, (GLfloat*) &userData->mvpTextMatrix.m[0][0] );
+
+    glDrawElements( GL_TRIANGLES, 30, GL_UNSIGNED_INT, userData->tbIndices ); 
+
     //__________________ CAMERA _______________________
 
     glActiveTexture ( GL_TEXTURE2 ); // текстурный блок 
@@ -803,7 +873,7 @@ void Update ( ESContext *esContext, float deltaTime )
    esTranslate( &modelview, 0.0, 0.0, -2.0 );
    esTranslate( &modelviewText, 0.0 , 0.0, -2.0 );  
 
-   esRotate( &modelviewText, userData->angle, -0.6, -0.4, 0.0 );
+   esRotate( &modelviewText, userData->angle, -0.45, -0.4, -0.1 );
    
    esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
    esMatrixMultiply( &userData->mvpTextMatrix, &modelviewText, &perspective );
