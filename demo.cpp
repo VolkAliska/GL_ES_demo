@@ -33,6 +33,7 @@ typedef struct
 // FRAME
 
    GLfloat *frameCoords;
+   GLuint *frameIndices;
 
 // TEXT 
 
@@ -105,26 +106,6 @@ int getTexCoords ( GLfloat **texCoords, const GLuint numVertices, char *text)
        {'Y', 'Z', '0', '1', '2', '3', '@'},
        {'4', '5', '6', '7', '8', '9', '#'}
    };
-
-//   char fontSheet[shHeigth][shWidth] =
-//    {
-//        {'A', 'B', 'C', 'D', 'E', 'F'},
-//        {'G', 'H', 'I', 'J', 'K', 'L'},
-//        {'M', 'N', 'O', 'P', 'Q', 'R'},
-//        {'S', 'T', 'U', 'V', 'W', 'X'},
-//        {'Y', 'Z', '0', '1', '2', '3'},
-//        {'4', '5', '6', '7', '8', '9'}
-//    };
-
-//     char fontSheet[shHeigth][shWidth] =
-//    {
-//        {'A', 'B', 'V', 'G', 'D', 'E'},
-//        {'1', 'J', 'Z', 'I', '2', 'K'},
-//        {'L', 'M', 'N', 'O', 'P', 'R'},
-//        {'S', 'T', 'U', 'F', 'X', 'C'},
-//        {'4', 'W', '5', '6', '7', '8'},
-//        {'4', 'Y', '6', '_', '0', '9'}
-//    };
     const GLuint texCount = numVertices * 2;
     GLfloat tex[numVertices * 2];
     char symbol;
@@ -224,6 +205,132 @@ GLuint createTexture(char *textureName )
    return texId;
 }
 
+int frameVert(GLfloat** frameVerts, GLuint** frameInd, GLfloat* points)
+{
+    GLfloat shX = 0.02f;
+    GLfloat shY = 0.02f;
+    int numVert = 12 * 5;
+    int numInd = 24;
+    GLfloat frCoords[numVert]=
+    {
+        points[0], points[1], points[2], // 0
+        0.0f, 0.0f,
+        points[3], points[4], points[5], // 1
+        0.0f, 1.0f,
+        points[6], points[7], points[8], // 2
+        1.0f, 1.0f,
+        points[9], points[10], points[11], // 3
+        1.0f, 0.0f,
+
+        points[0] + shX, points[1], points[2], // 10
+        1.0f, 0.0f,
+        points[3] + shX, points[4], points[5], // 4
+        1.0f, 1.0f,
+        points[6] - shX, points[7], points[8], // 5
+        0.0f, 1.0f,
+        points[9] - shX, points[10], points[11], // 11
+        0.0f, 0.0f,
+
+        points[0] + shX, points[1] + shY, points[2], // 8
+        1.0f, 1.0f,
+        points[3] + shX, points[4] - shY, points[5], // 6
+        1.0f, 0.0f,
+        points[6] - shX, points[7] - shY, points[8], // 7
+        1.0f, 0.0f,
+        points[9] - shX, points[10] + shY, points[11], // 9
+        1.0f, 1.0f
+    };
+    
+    *frameVerts = malloc (sizeof(GLfloat)*numVert);
+    memcpy(*frameVerts, frCoords, sizeof(GLfloat)*numVert);
+    printf("frame");
+
+    GLuint frInds[numInd] = {
+        0, 1, 4,
+        1, 5, 4,
+        
+        5, 6, 10,
+        10, 9, 5,
+        
+        7, 6, 2,
+        2, 3, 7,
+
+        7, 11, 8,
+        7, 4, 8
+    };
+
+    *frameInd = malloc (sizeof(GLfloat)*numInd);
+    memcpy(*frameInd, frInds, sizeof(GLfloat)*numInd);
+
+    return 0;
+}
+
+int makeText( int numInd, int numVert, GLuint** inds, GLfloat** verts, GLfloat* points)
+{
+   GLfloat y_min = points[0],
+            y_max = points[1],
+            x_min = points[2],
+            x_max = points[3];
+        
+    GLfloat firstBlock = x_min;
+    
+    int numBlocks = numVert / 4;
+    
+    GLfloat xlen = x_max - x_min;
+    GLfloat ylen = y_max - y_min;
+    GLfloat blockLen = xlen / numBlocks;
+
+    GLfloat w = blockLen * numBlocks; // для  координат - зависит ширина блока
+     
+    GLfloat blocksVerts[numVert*3];
+    GLfloat shiftY = (ylen - blockLen) / 2.0;
+
+    for ( int i = 0; i < numBlocks; i++ )
+    {
+        blocksVerts[0 + 12*i] = (firstBlock + (float)(w/numBlocks * i));       // 0  x
+        blocksVerts[1 + 12*i] = y_min + shiftY;                               //    y
+        blocksVerts[2 + 12*i] = 0.01f; 
+        
+        blocksVerts[3 + 12*i] = (firstBlock + (float)(w/numBlocks * i));       // 1
+        blocksVerts[4 + 12*i] = y_max - shiftY;
+        blocksVerts[5 + 12*i] = 0.01f;
+
+        blocksVerts[6 + 12*i] = (float)(firstBlock + (w/numBlocks * (i + 1))); // 2
+        blocksVerts[7 + 12*i] = y_max - shiftY;
+        blocksVerts[8 + 12*i] = 0.01f;
+
+        blocksVerts[9 + 12*i] = (float)(firstBlock + (w/numBlocks * (i + 1))); // 3
+        blocksVerts[10 + 12*i] = y_min + shiftY;
+        blocksVerts[11 + 12*i] = 0.01f;
+    }
+
+    
+    *verts = malloc ( sizeof(GLfloat) * 3 * numVert);
+    memcpy( *verts, blocksVerts, sizeof(GLfloat) * 3 * numVert );
+
+    GLuint sqIndices[numInd];
+
+    for ( int i = 0; i < numBlocks; i++ )
+    {
+        int buf = 4 * i;
+        sqIndices[0 + 6*i] = buf; // 1 triangle
+        sqIndices[1 + 6*i] = buf + 1;
+        sqIndices[2 + 6*i] = buf + 2;
+
+        sqIndices[3 + 6*i] = buf; // 2 triangle
+        sqIndices[4 + 6*i] = buf + 2;
+        sqIndices[5 + 6*i] = buf + 3;
+
+    }
+
+    //getTexCoords( &userData->texCoords, numVertices/*, text*/);
+    
+    *inds = malloc ( sizeof(GLuint) * numInd );
+    memcpy( *inds, sqIndices, sizeof(GLuint) * numInd );
+    
+    return 0;
+}
+
 int Init ( ESContext *esContext )
 {
    UserData *userData = (UserData*)esContext->userData;
@@ -291,43 +398,18 @@ int Init ( ESContext *esContext )
 
     userData->numImgIndices = 6;
 
-    // for (int i = 0 ; i < 20; i++){
-    //     printf("\n %f", userData->imgCoords[i]);
-    // }
-    // for (int i = 0 ; i < 6; i++){
-    //     printf("\n %d", userData->imgIndices[i]);
-    // }
-
     //__________________ IMAGE END ___________________
 
     //__________________ FRAME ___________________
 
-    GLfloat frCoords[40]=
-    {
+    GLfloat points[3*4] = {
         -1.80f, -1.34f, -0.56f,
-        0.0f, 0.0f,
         -1.80f, -0.1f, -0.56f,
-        1.0f, 0.0f,
         -0.1f, -0.1f, -0.56f,
-        1.0f, 1.0f,
-        -0.1f, -1.34, -0.56f,
-        0.0f, 1.0f,
-
-        -1.75f, -1.3f, -0.50f,
-        0.0f, 0.0f,
-        -1.75f, -0.11f, -0.50f,
-        1.0f, 0.0f,
-        -0.11f, -0.11f, -0.50f,
-        1.0f, 1.0f,
-        -0.11f, -1.3f, -0.50f,
-        0.0f, 1.0f
+        -0.1f, -1.34, -0.56f
     };
 
-    userData->frameCoords = malloc ( sizeof(GLfloat) * 40 );
-    memcpy(  userData->frameCoords, frCoords, sizeof(GLfloat) * 40);
-    // for (int i = 0 ; i < 40; i++){
-    //     printf("\n %f", userData->frameCoords[i]);
-    // }
+    frameVert(&userData->frameCoords, &userData->frameIndices, points);
 
     //__________________ FRAME END ___________________
 
@@ -441,65 +523,14 @@ int Init ( ESContext *esContext )
     userData->contIndices = malloc ( sizeof(GLuint) * 12 );
     memcpy(  userData->contIndices, contInd, sizeof(GLuint) * 12);
 
-    // for  (int i =0; i < 24; i++){
-    //     printf("\n contv %f", userData->contVertices[i]);
-    // }
-    // for  (int i =0; i < 16; i++){
-    //     printf("\n contt %f", userData->contTexCoords[i]);
-    // }
-    // for  (int i =0; i < 12; i++){
-    //     printf("\n conti %d", userData->contIndices[i]);
-    // }
-    
-    // координаты для текста ----
-
-    for ( int i = 0; i < numBlocks; i++ )
+    GLfloat textPoints[4] = 
     {
-        blocksVerts[0 + 12*i] = (firstBlock + (float)(w/numBlocks * i));       // 0  x
-        blocksVerts[1 + 12*i] = y_min + shiftY;                               //    y
-        blocksVerts[2 + 12*i] = 0.01f; 
-        
-        blocksVerts[3 + 12*i] = (firstBlock + (float)(w/numBlocks * i));       // 1
-        blocksVerts[4 + 12*i] = y_max - shiftY;
-        blocksVerts[5 + 12*i] = 0.01f;
+        y_min, y_max, 
+        x_min, x_max
+    };
 
-        blocksVerts[6 + 12*i] = (float)(firstBlock + (w/numBlocks * (i + 1))); // 2
-        blocksVerts[7 + 12*i] = y_max - shiftY;
-        blocksVerts[8 + 12*i] = 0.01f;
+    makeText( userData->numTextIndices, userData->numTextVertices, &userData->textIndices, &userData->textVertices, textPoints);
 
-        blocksVerts[9 + 12*i] = (float)(firstBlock + (w/numBlocks * (i + 1))); // 3
-        blocksVerts[10 + 12*i] = y_min + shiftY;
-        blocksVerts[11 + 12*i] = 0.01f;
-    }
-    
-    userData->textVertices = malloc ( sizeof(GLfloat) * 3 * userData->numTextVertices );
-    memcpy( userData->textVertices, blocksVerts, sizeof(GLfloat) * 3 * userData->numTextVertices  );
-
-    GLuint sqIndices[userData->numTextIndices];
-
-    for ( int i = 0; i < numBlocks; i++ )
-    {
-        int buf = 4 * i;
-        sqIndices[0 + 6*i] = buf; // 1 triangle
-        sqIndices[1 + 6*i] = buf + 1;
-        sqIndices[2 + 6*i] = buf + 2;
-
-        sqIndices[3 + 6*i] = buf; // 2 triangle
-        sqIndices[4 + 6*i] = buf + 2;
-        sqIndices[5 + 6*i] = buf + 3;
-
-    }
-
-    //getTexCoords( &userData->texCoords, numVertices/*, text*/);
-    
-    userData->textIndices = malloc ( sizeof(GLuint) * userData->numTextIndices );
-    memcpy( userData->textIndices, sqIndices, sizeof(GLuint) * userData->numTextIndices );
-    // for  (int i =0; i < 48; i++){
-    //     printf("\n textv %f", userData->textVertices[i]);
-    // }
-    // for  (int i =0; i < 24; i++){
-    //     printf("\n texti %d", userData->textIndices[i]);
-    // }
     //__________________ TEXT END ___________________
 
     //__________________ CAMERA _______________________
@@ -512,70 +543,18 @@ int Init ( ESContext *esContext )
             xCamera_max = -1.0f;
             
     GLuint numCameraBlocks = 1;
-    GLfloat firstCameraBlock = xCamera_min;
-    
     numCameraBlocks = symCount(camText);
-    // printf("\n numbl CAMERA %d", numCameraBlocks);
-    
-    GLfloat xCameralen = xCamera_max - xCamera_min;
-    GLfloat yCameralen = yCamera_max - yCamera_min;
-    GLfloat blockCameraLen = xCameralen / numCameraBlocks;
-
     userData->numCameraIndices *= numCameraBlocks;
     userData->numCameraVertices = 4 * numCameraBlocks;
 
-    GLfloat wCamera = blockCameraLen * numCameraBlocks; // для  координат - зависит ширина блока
-     
-    GLfloat blocksCamera[userData->numCameraVertices*3];
-    GLfloat shiftCameraY = (yCameralen - blockCameraLen) / 2.0;
-
-    for ( int i = 0; i < numCameraBlocks; i++ )
+    GLfloat cameraPoints[4] = 
     {
-        blocksCamera[0 + 12*i] = (firstCameraBlock + (float)(wCamera/numCameraBlocks * i));       // 0  x
-        blocksCamera[1 + 12*i] = yCamera_min + shiftCameraY;                               //    y
-        blocksCamera[2 + 12*i] = 0.004f; 
-        
-        blocksCamera[3 + 12*i] = (firstCameraBlock + (float)(wCamera/numCameraBlocks * i));       // 1
-        blocksCamera[4 + 12*i] = yCamera_max - shiftCameraY;
-        blocksCamera[5 + 12*i] = 0.004f;
+        yCamera_min, yCamera_max, 
+        xCamera_min, xCamera_max
+    };
 
-        blocksCamera[6 + 12*i] = (float)(firstCameraBlock + (wCamera/numCameraBlocks * (i + 1))); // 2
-        blocksCamera[7 + 12*i] = yCamera_max - shiftCameraY;
-        blocksCamera[8 + 12*i] = 0.004f;
+    makeText( userData->numCameraIndices, userData->numCameraVertices, &userData->cameraIndices, &userData->cameraVertices, cameraPoints);
 
-        blocksCamera[9 + 12*i] = (float)(firstCameraBlock + (wCamera/numCameraBlocks * (i + 1))); // 3
-        blocksCamera[10 + 12*i] = yCamera_min + shiftCameraY;
-        blocksCamera[11 + 12*i] = 0.004f;
-    }
-    
-
-    userData->cameraVertices = malloc ( sizeof(GLfloat) * 3 * userData->numCameraVertices );
-    memcpy( userData->cameraVertices, blocksCamera, sizeof(GLfloat) * 3 * userData->numCameraVertices  );
-
-    GLuint camIndices[userData->numCameraIndices];
-
-    // printf("\n indeces: %d", userData->numCameraIndices);
-
-    for ( int i = 0; i < numCameraBlocks; i++ )
-    {
-        int buf = 4 * i;
-        camIndices[0 + 6*i] = buf; // 1 triangle
-        camIndices[1 + 6*i] = buf + 1;
-        camIndices[2 + 6*i] = buf + 2;
-
-        camIndices[3 + 6*i] = buf; // 2 triangle
-        camIndices[4 + 6*i] = buf + 2;
-        camIndices[5 + 6*i] = buf + 3;
-
-    }
-    //getTexCoords( &userData->texCoords, numVertices/*, text*/);
-    
-    userData->cameraIndices = malloc ( sizeof(GLuint) * userData->numCameraIndices );
-    memcpy( userData->cameraIndices, camIndices, sizeof(GLuint) * userData->numCameraIndices );
-  
-    // for  (int i =0; i < userData->numCameraIndices; i++){
-    //     printf("\n cami %d", userData->cameraIndices[i]);
-    // }
     //__________________ CAMERA END ___________________
  
 	time_t     now = time(0);
@@ -597,70 +576,18 @@ int Init ( ESContext *esContext )
             xDate_max = 1.2f;
             
     GLuint numDateBlocks = 1;
-    GLfloat firstDateBlock = xDate_min;
-    
     numDateBlocks = symCount(timeText);
-    // printf("\n numbl CAMERA %d", numCameraBlocks);
-    
-    GLfloat xDatelen = xDate_max - xDate_min;
-    GLfloat yDatelen = yDate_max - yDate_min;
-    GLfloat blockDateLen = xDatelen / numDateBlocks;
-
     userData->numDateIndices *= numDateBlocks;
     userData->numDateVertices = 4 * numDateBlocks;
 
-    GLfloat wDate = blockDateLen * numDateBlocks; // для  координат - зависит ширина блока
-     
-    GLfloat blocksDate[userData->numDateVertices*3];
-    GLfloat shiftDateY = (yDatelen - blockDateLen) / 2.0;
-
-    for ( int i = 0; i < numDateBlocks; i++ )
+    GLfloat datePoints[4] = 
     {
-        blocksDate[0 + 12*i] = (firstDateBlock + (float)(wDate/numDateBlocks * i));       // 0  x
-        blocksDate[1 + 12*i] = yDate_min + shiftDateY;                               //    y
-        blocksDate[2 + 12*i] = 0.004f; 
-        
-        blocksDate[3 + 12*i] = (firstDateBlock + (float)(wDate/numDateBlocks * i));       // 1
-        blocksDate[4 + 12*i] = yDate_max - shiftDateY;
-        blocksDate[5 + 12*i] = 0.004f;
+        yDate_min, yDate_max, 
+        xDate_min, xDate_max
+    };
 
-        blocksDate[6 + 12*i] = (float)(firstDateBlock + (wDate/numDateBlocks * (i + 1))); // 2
-        blocksDate[7 + 12*i] = yDate_max - shiftDateY;
-        blocksDate[8 + 12*i] = 0.004f;
+    makeText( userData->numDateIndices, userData->numDateVertices, &userData->dateIndices, &userData->dateVertices, datePoints);
 
-        blocksDate[9 + 12*i] = (float)(firstDateBlock + (wDate/numDateBlocks * (i + 1))); // 3
-        blocksDate[10 + 12*i] = yDate_min + shiftDateY;
-        blocksDate[11 + 12*i] = 0.004f;
-    }
-    
-
-    userData->dateVertices = malloc ( sizeof(GLfloat) * 3 * userData->numDateVertices );
-    memcpy( userData->dateVertices, blocksDate, sizeof(GLfloat) * 3 * userData->numDateVertices  );
-
-    GLuint dateIndices[userData->numDateIndices];
-
-    // printf("\n indeces: %d", userData->numCameraIndices);
-
-    for ( int i = 0; i < numDateBlocks; i++ )
-    {
-        int buf = 4 * i;
-        dateIndices[0 + 6*i] = buf; // 1 triangle
-        dateIndices[1 + 6*i] = buf + 1;
-        dateIndices[2 + 6*i] = buf + 2;
-
-        dateIndices[3 + 6*i] = buf; // 2 triangle
-        dateIndices[4 + 6*i] = buf + 2;
-        dateIndices[5 + 6*i] = buf + 3;
-
-    }
-    //getTexCoords( &userData->texCoords, numVertices/*, text*/);
-    
-    userData->dateIndices = malloc ( sizeof(GLuint) * userData->numDateIndices );
-    memcpy( userData->dateIndices, dateIndices, sizeof(GLuint) * userData->numDateIndices );
-  
-    // for  (int i =0; i < userData->numCameraIndices; i++){
-    //     printf("\n cami %d", userData->cameraIndices[i]);
-    // }
     //__________________ DATE END ___________________
 
 
@@ -718,6 +645,9 @@ void Draw ( ESContext *esContext )
     //__________________ IMAGE END ___________________
 
     //__________________ FRAME ___________________
+    glActiveTexture ( GL_TEXTURE0 ); // текстурный блок 
+   glBindTexture ( GL_TEXTURE_2D, userData->textureImage );
+   glUniform1i ( userData->samplerLoc, 0 );
 
      GLuint frameInd[][6] =
     {
@@ -737,12 +667,12 @@ void Draw ( ESContext *esContext )
 
    glUniform4fv( userData->pColorLoc, 1, colors[1]);
    glUniform4fv( userData->uColorLoc, 1, colors[1]);
-   glDrawElements ( GL_TRIANGLES, 6, GL_UNSIGNED_INT, frameInd[0] );
+   glDrawElements ( GL_TRIANGLES, 24, GL_UNSIGNED_INT, userData->frameIndices);
 
    
-   glUniform4fv( userData->pColorLoc, 1, colors[2]);
-   glUniform4fv( userData->uColorLoc, 1, colors[2]);
-   glDrawElements ( GL_TRIANGLES, 6, GL_UNSIGNED_INT, frameInd[1] );
+//    glUniform4fv( userData->pColorLoc, 1, colors[2]);
+//    glUniform4fv( userData->uColorLoc, 1, colors[2]);
+//    glDrawElements ( GL_TRIANGLES, 6, GL_UNSIGNED_INT, frameInd[1] );
 
     //__________________ FRAME END ___________________
 
@@ -853,11 +783,6 @@ void Update ( ESContext *esContext, float deltaTime )
    getTexCoords( &userData->cameraTexCoords, userData->numCameraVertices, camText);
    getTexCoords( &userData->dateTexCoords, userData->numDateVertices, timeText);
 
-//    for (int i = 0 ; i < userData->numTextVertices * 2; i++){
-//        printf("\n tex %d, %f", i, userData->textTexCoords[i]);
-//    }
-//    printf("____________________");
-
    userData->angle += ( deltaTime * 40.0f );
    if( userData->angle >= 360.0f )
       userData->angle -= 360.0f;
@@ -939,6 +864,6 @@ int main(int argc, char *argv[])
 	{
 	     updateNumber(i, 1);
 	}
-
+    // shared_I = "7777";
 	pthread_join(glThread, NULL);
 }
