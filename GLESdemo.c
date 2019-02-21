@@ -614,7 +614,7 @@ void Draw ( ESContext *esContext )
        { 1.0f, 1.0f, 1.0f, 0.0f }, // nothing
        { 0.0f, 1.0f, 0.0f, 1.0f }, // green
        { 0.0f, 0.0f, 0.0f, 0.0f }, // black 0 - полностью прозрачный
-        { 0.3f, 0.3f, 0.3f, 1.0f }, // gray
+       { 0.3f, 0.3f, 0.3f, 1.0f }, // gray
    };
 
    //__________________ IMAGE ___________________
@@ -791,8 +791,8 @@ void Update ( ESContext *esContext, float deltaTime )
    // Translate away from the viewer
    esTranslate( &modelview, 0.0, 0.0, -2.0 );
    esTranslate( &modelviewText, 0.0 , 0.0, -2.0 );  
-
-   esRotate( &modelviewText, userData->angle, -0.55, -0.4, -0.1 );
+   GLfloat xCent = (userData->textVertices[0] + userData->textVertices[5] + userData->textVertices[10]) / 3.0;
+   esRotate( &modelviewText, userData->angle, xCent, -0.4, -0.1 );
    
    esMatrixMultiply( &userData->mvpMatrix, &modelview, &perspective );
    esMatrixMultiply( &userData->mvpTextMatrix, &modelviewText, &perspective );
