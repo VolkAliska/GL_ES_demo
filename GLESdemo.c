@@ -1,4 +1,4 @@
-#include <iostream>
+#include <stdio.h>
 #include "esUtil.h"
 #include <pthread.h>
 #include <sstream>
@@ -6,8 +6,6 @@
 #include <ctime>
 
 #include "windows.h"
-
-using namespace std;
 
 char* myIterator;
 typedef struct
@@ -836,26 +834,10 @@ void* glTask(void* ptr)
    ShutDown ( &esContext );
 }
 
-int updateNumber(int i, int sec)
-{
- 	Sleep(sec);
-
-	cout << "task1 says: " << " " << setfill('0') << setw(4) << i << endl;
-	std::stringstream buffer;
-	buffer << setfill('0') << setw(4) << i;
-	const std::string tmp = buffer.str();
-	const char* cstr = tmp.c_str();
-	shared_I = (char*)malloc(10);
-	memcpy(shared_I, cstr, 10);
-
-	return 0;
-}
-
 int myiterator(int i, int size, int sec)
 {
  	Sleep(sec);
     char buf[size];
-    // itoa(i, buf, 10);
     int iter = i;
     for (int t = 0; t < size; t++)
     {
@@ -871,13 +853,12 @@ int myiterator(int i, int size, int sec)
             buf[size - t - 1] = sym;
         }
         iter /= 10;
-        printf("%c", buf[t]);
     }
     buf[size] = '\0';
-    printf("\n");
     shared_I = (char*)malloc(10);
 	memcpy(shared_I, buf, 10);
-    cout << "sh: " << shared_I << endl;
+    printf("\ntask says: ");
+    printf(shared_I);
     
 	return 0;
 }
@@ -893,10 +874,7 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; i < 1000; ++i)
 	{
-	    // updateNumber(i, 250);
         myiterator(i, 4, 250);
 	}
-    
-    // shared_I = "7777";
 	pthread_join(glThread, NULL);
 }
