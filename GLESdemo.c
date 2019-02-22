@@ -424,7 +424,6 @@ int Init ( ESContext *esContext )
     char *text = shared_I;
     //gets(text);
     numBlocks = symCount(text);
-    printf("numbl %d", numBlocks);
     
     GLfloat xlen = x_max - x_min;
     GLfloat ylen = y_max - y_min;
@@ -646,13 +645,13 @@ void Draw ( ESContext *esContext )
    glBindTexture ( GL_TEXTURE_2D, userData->textureImage );
    glUniform1i ( userData->samplerLoc, 0 );
 
-     GLuint frameInd[][6] =
-    {
-       {0, 1, 2,
-       2, 3, 0},
-      {4, 5, 6,
-       6, 7, 4}
-    };
+    //  GLuint frameInd[][6] =
+    // {
+    //    {0, 1, 2,
+    //    2, 3, 0},
+    //   {4, 5, 6,
+    //    6, 7, 4}
+    // };
 
    glVertexAttribPointer ( userData->positionLoc, 3, GL_FLOAT, 
                            GL_FALSE, 5 * sizeof(GLfloat), userData->frameCoords );
@@ -798,19 +797,37 @@ void Update ( ESContext *esContext, float deltaTime )
    esMatrixMultiply( &userData->mvpTextMatrix, &modelviewText, &perspective );
 }
 
+void freeMem( GLfloat** vert, GLfloat** tex, GLuint** ind)
+{
+    if ( *vert != NULL )
+   {
+      free ( *vert );
+   }
+
+   if ( *tex != NULL )
+   {
+      free ( *tex );
+   }
+   if ( *ind != NULL )
+   {
+      free ( *ind );
+   }
+}
+
 void ShutDown ( ESContext *esContext )
 {
    UserData *userData = (UserData*)esContext->userData;
 
-   if ( userData->imgCoords != NULL )
-   {
-      free ( userData->imgCoords );
-   }
+   freeMem(&userData->imgCoords, NULL, &userData->imgIndices);
+   freeMem(&userData->textVertices, &userData->textTexCoords, &userData->textIndices);
+   freeMem(&userData->contVertices, &userData->contTexCoords, &userData->contIndices);
+   freeMem(&userData->tbVertices, &userData->tbTexCoords, &userData->tbIndices);
+   freeMem(&userData->cameraVertices, &userData->cameraTexCoords, &userData->cameraIndices);
+   freeMem(&userData->dateVertices, &userData->dateTexCoords, &userData->dateIndices);
 
-   if ( userData->imgIndices != NULL )
-   {
-      free ( userData->imgIndices );
-   }
+   glDeleteTextures ( 1, &userData->textureImage );
+   glDeleteTextures ( 1, &userData->textureGreen );
+   glDeleteTextures ( 1, &userData->textureBlack );
    glDeleteProgram ( userData->programObject );
 }
 
@@ -826,7 +843,7 @@ void* glTask(void* ptr)
    
    if ( !Init ( &esContext ) )
       return 0;
-
+    // Update( &esContext, 0);
    esRegisterDrawFunc ( &esContext, Draw );
    esRegisterUpdateFunc ( &esContext, Update );
 
@@ -855,7 +872,6 @@ int myiterator(int i, int size, int sec)
         iter /= 10;
     }
     buf[size] = '\0';
-    shared_I = (char*)malloc(10);
 	memcpy(shared_I, buf, 10);
     printf("\ntask says: ");
     printf(shared_I);
@@ -866,6 +882,7 @@ int myiterator(int i, int size, int sec)
 int main(int argc, char *argv[])
 {
  	pthread_t glThread;
+    shared_I = (char*)malloc(10);
 
 	int status = pthread_create(&glThread, NULL, glTask, NULL);
     if (status != 0) {
