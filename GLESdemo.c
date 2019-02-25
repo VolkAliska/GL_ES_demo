@@ -169,8 +169,9 @@ int symCount ( char *text )
     GLuint symCount = 0;
     for ( int i = 0; i < 30; i++)
     {
-        if(text[i] != '\0')
+        if(text[i] != '\0'){
             symCount++;
+        }
         else
             break;
     }
@@ -330,6 +331,7 @@ int makeText( int numInd, int numVert, GLuint** inds, GLfloat** verts, GLfloat* 
 
 int Init ( ESContext *esContext )
 {
+    
    UserData *userData = (UserData*)esContext->userData;
     int win_width = esContext->width;
     int win_height = esContext->height;
@@ -424,6 +426,8 @@ int Init ( ESContext *esContext )
     char *text = shared_I;
     //gets(text);
     numBlocks = symCount(text);
+    printf("\n text size: %d", numBlocks);
+    numBlocks = 4;
     
     GLfloat xlen = x_max - x_min;
     GLfloat ylen = y_max - y_min;
@@ -772,9 +776,9 @@ void Update ( ESContext *esContext, float deltaTime )
    ESMatrix modelview;
    ESMatrix modelviewText;
    float    aspect;
-   getTexCoords( &userData->textTexCoords, userData->numTextVertices, shared_I);
-   getTexCoords( &userData->cameraTexCoords, userData->numCameraVertices, camText);
-   getTexCoords( &userData->dateTexCoords, userData->numDateVertices, timeText);
+   getTexCoords( &userData->textTexCoords, userData->numTextVertices, shared_I );
+   getTexCoords( &userData->cameraTexCoords, userData->numCameraVertices, camText );
+   getTexCoords( &userData->dateTexCoords, userData->numDateVertices, timeText );
 
    userData->angle += ( deltaTime * 40.0f );
    if( userData->angle >= 360.0f )
@@ -872,7 +876,9 @@ int myiterator(int i, int size, int sec)
         iter /= 10;
     }
     buf[size] = '\0';
-	memcpy(shared_I, buf, 10);
+    printf("\n");
+    printf(buf);
+	memcpy(shared_I, buf, 5);
     printf("\ntask says: ");
     printf(shared_I);
     
@@ -881,9 +887,13 @@ int myiterator(int i, int size, int sec)
 
 int main(int argc, char *argv[])
 {
+    
  	pthread_t glThread;
-    shared_I = (char*)malloc(10);
 
+    shared_I = (char*)malloc(10);
+    char buf[5] = "00000";
+    buf[4] = '\0';
+    memcpy(shared_I, buf, 5);
 	int status = pthread_create(&glThread, NULL, glTask, NULL);
     if (status != 0) {
         printf("main error: can't create thread, status = %d\n", status);
@@ -891,7 +901,7 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; i < 1000; ++i)
 	{
-        myiterator(i, 4, 250);
+        myiterator(i, 4, 450);
 	}
 	pthread_join(glThread, NULL);
 }
